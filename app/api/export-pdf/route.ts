@@ -1,114 +1,81 @@
-import { NextRequest, NextResponse } from 'next/server'
+import {NextRequest, NextResponse} from 'next/server'
 import puppeteer from 'puppeteer'
-import { marked } from 'marked'
+import fs from 'fs'
+import path from 'path'
+import {getGoogleAIClient} from '@/lib/ai-config'
+
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { markdown, pageSize, filename } = await request.json()
+    console.log('Export-PDF: received request')
+    const {templateData, pageSize, filename} = await request.json()
 
-    if (!markdown) {
-      return NextResponse.json(
-        { message: 'Markdown content is required' },
-        { status: 400 }
-      )
+    if (!templateData) {
+      return NextResponse.json({message: 'Template data is required'}, {status: 400})
+    }
+    const debugMode = Boolean(templateData.debug)
+
+    // Load PDF HTML template
+    const templatePath = path.resolve(process.cwd(), 'pdf_template.html')
+    const templateHtml = fs.readFileSync(templatePath, 'utf-8')
+
+    // Use Google Gemini to replace placeholders in template
+    const aiClient = getGoogleAIClient()
+    const model = aiClient.getGenerativeModel({model: 'gemini-1.5-flash'})
+    // Build prompt for template rendering
+    const systemPrompt = `You are an HTML templating engine. Given the HTML template and JSON data, replace all placeholders of the form {{key}} with the corresponding values. Return only the final HTML.`
+    const userPrompt = `TEMPLATE:\n${templateHtml}\n\nDATA:\n${JSON.stringify(templateData)}`
+    const aiResult = await model.generateContent([
+      systemPrompt,
+      userPrompt
+    ])
+    const fullHtml = aiResult.response.text()
+    console.log(`Export-PDF: generated HTML content length ${fullHtml.length}`)
+    if (debugMode) {
+      return NextResponse.json({html: fullHtml})
     }
 
-    // Convert markdown to HTML
-    const html = marked(markdown)
-    
-    // Create full HTML document with proper styling
-    const fullHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Worksheet</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              line-height: 1.6;
-              color: #333;
-              max-width: none;
-              margin: 0;
-              padding: 1in;
-            }
-            h1, h2, h3 { 
-              color: #2563eb; 
-              margin-top: 1.5em;
-              margin-bottom: 0.5em;
-            }
-            h1 { font-size: 1.5em; }
-            h2 { font-size: 1.3em; }
-            h3 { font-size: 1.1em; }
-            table {
-              border-collapse: collapse;
-              width: 100%;
-              margin: 1em 0;
-            }
-            th, td {
-              border: 1px solid #ddd;
-              padding: 8px;
-              text-align: left;
-            }
-            th {
-              background-color: #f8f9fa;
-              font-weight: 600;
-            }
-            hr {
-              border: none;
-              border-top: 2px solid #e5e7eb;
-              margin: 2em 0;
-            }
-            .page-break {
-              page-break-before: always;
-            }
-            @media print {
-              body { margin: 0; }
-            }
-          </style>
-        </head>
-        <body>
-          ${html}
-        </body>
-      </html>
-    `
-
-    // Launch Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    })
-
+    // Launch Chromium and render the template
+    const browser = await puppeteer.launch({headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox']})
     const page = await browser.newPage()
+    // Set the HTML content and wait until it's fully loaded
+    // Render page content
     await page.setContent(fullHtml, { waitUntil: 'networkidle0' })
-
-    // Generate PDF with proper page settings
+    console.log('Export-PDF: page.setContent done')
+    // Apply screen media type
+    await page.emulateMediaType('screen')
+    console.log('Export-PDF: page.emulateMediaType done')
+    // Force exact color rendering
+    await page.addStyleTag({content: 'html { -webkit-print-color-adjust: exact; }'})
+    console.log('Export-PDF: page.addStyleTag done')
+    // Optional delay to allow late loads
+    console.log('Export-PDF: page.waitForTimeout done')
+    // Generate PDF buffer
+    console.log('Export-PDF: page.pdf() starting')
     const pdfBuffer = await page.pdf({
       format: pageSize === 'Letter' ? 'letter' : 'a4',
-      margin: {
-        top: '1in',
-        right: '1in',
-        bottom: '1in',
-        left: '1in'
-      },
+      margin: {top: '1in', right: '1in', bottom: '1in', left: '1in'},
       printBackground: true,
       preferCSSPageSize: true
     })
-
+    console.log('Export-PDF: page.pdf() completed, buffer length', pdfBuffer.length)
     await browser.close()
 
     // Return PDF as response
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename || 'worksheet'}.pdf"`
+        'Content-Disposition': `attachment; filename="${filename || 'document'}.pdf"`
       }
     })
 
   } catch (error) {
     console.error('PDF export error:', error)
+    const errMsg = error instanceof Error ? error.message : 'Unknown error'
+    const errStack = error instanceof Error ? error.stack : undefined
     return NextResponse.json(
-      { message: 'Failed to export PDF. Please try again.' },
+        {message: errMsg, stack: errStack},
       { status: 500 }
     )
   }
