@@ -183,14 +183,14 @@ export default function WorksheetMaker() {
       const data = await response.json()
       setMarkdown(data.markdown)
       setEstimatedPages(estimatePages(data.markdown))
-      
+
       toast({
         title: 'Worksheet generated!',
         description: 'Your worksheet is ready for preview and export.'
       })
     } catch (error) {
       let errorMessage = 'Please try again.'
-  
+
       if (error instanceof Error) {
         if (error.message.includes('API key')) {
           errorMessage = 'Google AI API key is not configured. Please check your environment variables.'
@@ -202,7 +202,7 @@ export default function WorksheetMaker() {
           errorMessage = error.message
         }
       }
-      
+
       toast({
         title: 'Generation failed',
         description: errorMessage,
@@ -239,7 +239,7 @@ export default function WorksheetMaker() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    
+
     toast({
       title: 'Downloaded!',
       description: 'Markdown file saved to your device.'
@@ -252,8 +252,8 @@ export default function WorksheetMaker() {
       const response = await fetch('/api/export-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          markdown, 
+        body: JSON.stringify({
+          markdown,
           pageSize: inputs.page_size,
           filename: `${inputs.subject}-${inputs.topic}-worksheet`
         })
@@ -272,7 +272,7 @@ export default function WorksheetMaker() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      
+
       toast({
         title: 'PDF exported!',
         description: 'PDF file saved to your device.'

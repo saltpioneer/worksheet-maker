@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>{{unit_title}} – Class Plan</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+    <style>
+        /* -------- PRINT + LAYOUT -------- */
+        @page {
+            size: A4;
+            margin: 18mm 16mm 20mm 16mm;
+        }
+
+        /* Change to 'Letter' if needed */
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font: 12pt/1.35 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            color: #111;
+            background: #fff;
+            margin: 0;
+            counter-reset: section;
+        }
+
+        header, footer {
+            position: running(header), running(footer);
+        }
+
+        /* Paged-media headers/footers (supported by most PDF renderers like Prince/WeasyPrint).
+           Harmless no-ops elsewhere; we also print visible header/footer blocks. */
+        @page {
+            @top-left {
+                content: element(header)
+            }
+            @bottom-center {
+                content: element(footer)
+            }
+        }
+
+        .document {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 4mm;
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 6pt;
+            line-height: 1.2;
+        }
+
+        h1 {
+            font-size: 20pt;
+            letter-spacing: .2px;
+        }
+
+        h2 {
+            font-size: 14.5pt;
+            margin-top: 14pt;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 4pt;
+        }
+
+        h3 {
+            font-size: 12.5pt;
+            margin-top: 10pt;
+            color: #222;
+        }
+
+        .muted {
+            color: #666;
+        }
+
+        .small {
+            font-size: 10pt;
+        }
+
+        .grid {
+            display: grid;
+            gap: 6pt;
+        }
+
+        .grid-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .box {
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            padding: 8pt;
+            page-break-inside: avoid;
+            background: #fafafa;
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: 34% 66%;
+            gap: 2pt 6pt;
+        }
+
+        .kv div {
+            padding: 2pt 0;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2pt 6pt;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 4pt;
+        }
+
+        .list-tight li {
+            margin: 2pt 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 6pt 0;
+        }
+
+        th, td {
+            border: 1px solid #e1e1e1;
+            padding: 6pt;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f3f3f3;
+            text-align: left;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        .nowrap {
+            white-space: nowrap;
+        }
+
+        /* Visible header/footer fallbacks (in case @page running elements are unsupported) */
+        .visible-header, .visible-footer {
+            width: 100%;
+        }
+
+        .visible-header {
+            margin: 8mm 0 4mm;
+        }
+
+        .visible-footer {
+            margin: 6mm 0 0;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        /* Rubric levels */
+        .rubric-levels th, .rubric-levels td {
+            width: 20%;
+        }
+    </style>
+</head>
+<body>
+<!-- Running header (paged-media) -->
+<header>
+    <div class="small muted">Class Plan – {{subject}} – {{topic}} – {{date}}</div>
+</header>
+
+<!-- Running footer (paged-media) -->
+<footer>
+    <div class="small muted center">Page <span class="pageNumber"></span></div>
+</footer>
+
+<div class="document">
+
+    <!-- Visible header (fallback) -->
+    <div class="visible-header small muted">Class Plan – {{subject}} – {{topic}} – {{date}}</div>
+
+    <!-- COVER / BASIC INFORMATION (from your questionnaire) -->
+    <section id="basic-information">
+        <h1 data-field="document_title">{{unit_title}} – Class Plan & Worksheet Pack</h1>
+        <div class="grid grid-3 box">
+            <div>
+                <h3>Basic Information</h3>
+                <div class="kv">
+                    <div class="muted">Curriculum</div>
+                    <div data-field="curriculum">{{curriculum}}</div>
+                    <div class="muted">Subject</div>
+                    <div data-field="subject">{{subject}}</div>
+                    <div class="muted">Grade/Year</div>
+                    <div data-field="grade">{{grade}}</div>
+                    <div class="muted">Duration</div>
+                    <div data-field="duration">{{duration}}</div>
+                    <div class="muted">Topic</div>
+                    <div data-field="topic">{{topic}}</div>
+                    <div class="muted">Class/Room</div>
+                    <div data-field="room">{{room}}</div>
+                    <div class="muted">Date</div>
+                    <div data-field="date">{{date}}</div>
+                    <div class="muted">Teacher</div>
+                    <div data-field="teacher">{{teacher_name}}</div>
+                </div>
+            </div>
+            <div>
+                <h3>Constraints &amp; Accommodations</h3>
+                <ul class="list-tight" data-field="constraints_list">
+                    <li>{{constraint_1}}</li>
+                    <li>{{constraint_2}}</li>
+                    <li>{{constraint_3}}</li>
+                </ul>
+                <div class="muted small">Examples: reading age, EAL needs, accessibility adjustments.</div>
+            </div>
+            <div>
+                <h3>Materials &amp; Tech</h3>
+                <ul class="list-tight" data-field="materials_list">
+                    <li>{{material_1}}</li>
+                    <li>{{material_2}}</li>
+                    <li>{{material_3}}</li>
+                </ul>
+                <div class="muted small">e.g., manipulatives, calculators, slides, links.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LEARNING OBJECTIVES -->
+    <section id="learning-objectives">
+        <h2>Learning Objectives</h2>
+        <ol data-field="learning_objectives">
+            <li>{{objective_1}}</li>
+            <li>{{objective_2}}</li>
+            <li>{{objective_3}}</li>
+        </ol>
+        <h3>Success Criteria</h3>
+        <ul class="list-tight" data-field="success_criteria">
+            <li>{{success_1}}</li>
+            <li>{{success_2}}</li>
+            <li>{{success_3}}</li>
+        </ul>
+        <h3>Standards/Outcomes Alignment</h3>
+        <ul class="list-tight" data-field="standards_alignment">
+            <li>{{standard_1}}</li>
+            <li>{{standard_2}}</li>
+        </ul>
+    </section>
+
+    <!-- LESSON AT A GLANCE (timed segments) -->
+    <section id="lesson-at-a-glance">
+        <h2>Lesson Plan at a Glance</h2>
+        <table>
+            <thead>
+            <tr>
+                <th class="nowrap">Segment</th>
+                <th>Description / Steps</th>
+                <th class="center nowrap">Time (min)</th>
+                <th class="nowrap">Grouping</th>
+                <th>Resources</th>
+                <th>Checks for Understanding</th>
+            </tr>
+            </thead>
+            <tbody data-field="segments">
+            <tr>
+                <td>Hook / Warm-Up</td>
+                <td>{{hook_description}}</td>
+                <td class="center">{{hook_time}}</td>
+                <td>{{hook_grouping}}</td>
+                <td>{{hook_resources}}</td>
+                <td>{{hook_cfu}}</td>
+            </tr>
+            <tr>
+                <td>Explicit Instruction</td>
+                <td>{{direct_description}}</td>
+                <td class="center">{{direct_time}}</td>
+                <td>{{direct_grouping}}</td>
+                <td>{{direct_resources}}</td>
+                <td>{{direct_cfu}}</td>
+            </tr>
+            <tr>
+                <td>Guided Practice</td>
+                <td>{{guided_description}}</td>
+                <td class="center">{{guided_time}}</td>
+                <td>{{guided_grouping}}</td>
+                <td>{{guided_resources}}</td>
+                <td>{{guided_cfu}}</td>
+            </tr>
+            <tr>
+                <td>Independent Practice</td>
+                <td>{{independent_description}}</td>
+                <td class="center">{{independent_time}}</td>
+                <td>{{independent_grouping}}</td>
+                <td>{{independent_resources}}</td>
+                <td>{{independent_cfu}}</td>
+            </tr>
+            <tr>
+                <td>Closure</td>
+                <td>{{closure_description}}</td>
+                <td class="center">{{closure_time}}</td>
+                <td>{{closure_grouping}}</td>
+                <td>{{closure_resources}}</td>
+                <td>{{closure_cfu}}</td>
+            </tr>
+            <tr>
+                <td>Exit Ticket</td>
+                <td>{{exit_ticket_description}}</td>
+                <td class="center">{{exit_ticket_time}}</td>
+                <td>{{exit_ticket_grouping}}</td>
+                <td>{{exit_ticket_resources}}</td>
+                <td>{{exit_ticket_cfu}}</td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="small muted">Total duration: {{duration}} (verify segment totals match).</div>
+    </section>
+
+    <!-- DIFFERENTIATION LEVELS (Support/Core/Extension from your questionnaire) -->
+    <section id="differentiation">
+        <h2>Differentiation</h2>
+        <div class="grid grid-3">
+            <div class="box">
+                <h3>Support Level</h3>
+                <p data-field="support_description">{{support_description}}</p>
+                <div><span class="tag">Questions: {{support_questions_count}}</span></div>
+                <ul class="list-tight" data-field="support_strategies">
+                    <li>{{support_strategy_1}}</li>
+                    <li>{{support_strategy_2}}</li>
+                </ul>
+            </div>
+            <div class="box">
+                <h3>Core Level</h3>
+                <p data-field="core_description">{{core_description}}</p>
+                <div><span class="tag">Questions: {{core_questions_count}}</span></div>
+                <ul class="list-tight" data-field="core_strategies">
+                    <li>{{core_strategy_1}}</li>
+                    <li>{{core_strategy_2}}</li>
+                </ul>
+            </div>
+            <div class="box">
+                <h3>Extension Level</h3>
+                <p data-field="extension_description">{{extension_description}}</p>
+                <div><span class="tag">Questions: {{extension_questions_count}}</span></div>
+                <ul class="list-tight" data-field="extension_strategies">
+                    <li>{{extension_strategy_1}}</li>
+                    <li>{{extension_strategy_2}}</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- ASSESSMENT -->
+    <section id="assessment">
+        <h2>Assessment</h2>
+        <div class="grid grid-2">
+            <div class="box">
+                <h3>Formative</h3>
+                <ul class="list-tight" data-field="formative_assessments">
+                    <li>{{formative_1}}</li>
+                    <li>{{formative_2}}</li>
+                    <li>{{formative_3}}</li>
+                </ul>
+            </div>
+            <div class="box">
+                <h3>Summative</h3>
+                <ul class="list-tight" data-field="summative_assessments">
+                    <li>{{summative_1}}</li>
+                    <li>{{summative_2}}</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Optional rubric (toggle on/off) -->
+        <div class="page-break"></div>
+        <h3>Rubric</h3>
+        <table class="rubric-levels" data-field="rubric">
+            <thead>
+            <tr>
+                <th>Criteria</th>
+                <th>4 – Exceeds</th>
+                <th>3 – Meets</th>
+                <th>2 – Approaches</th>
+                <th>1 – Beginning</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>{{rubric_criteria_1}}</td>
+                <td>{{rubric_c1_l4}}</td>
+                <td>{{rubric_c1_l3}}</td>
+                <td>{{rubric_c1_l2}}</td>
+                <td>{{rubric_c1_l1}}</td>
+            </tr>
+            <tr>
+                <td>{{rubric_criteria_2}}</td>
+                <td>{{rubric_c2_l4}}</td>
+                <td>{{rubric_c2_l3}}</td>
+                <td>{{rubric_c2_l2}}</td>
+                <td>{{rubric_c2_l1}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- OPTIONAL: TEACHER NOTES -->
+    <section class="page-break" id="teacher-notes">
+        <h2>Teacher Notes</h2>
+        <p class="muted small">Use this space for sequencing tips, anticipated misconceptions, exemplar explanations,
+            and follow-ups.</p>
+        <div class="box" data-field="teacher_notes" style="min-height:80mm">{{teacher_notes}}</div>
+    </section>
+
+    <!-- WORKSHEET OUTLINE (supports auto-generation + answer key) -->
+    <section class="page-break" id="worksheet-outline">
+        <h2>Worksheet Pack</h2>
+        <h3>Support Level Questions</h3>
+        <ol data-field="support_questions">
+            <li>{{support_q1}}</li>
+            <li>{{support_q2}}</li>
+            <li>{{support_q3}}</li>
+            <li>{{support_q4}}</li>
+        </ol>
+        <h3>Core Level Questions</h3>
+        <ol data-field="core_questions">
+            <li>{{core_q1}}</li>
+            <li>{{core_q2}}</li>
+            <li>{{core_q3}}</li>
+            <li>{{core_q4}}</li>
+            <li>{{core_q5}}</li>
+            <li>{{core_q6}}</li>
+        </ol>
+        <h3>Extension Level Tasks</h3>
+        <ol data-field="extension_tasks">
+            <li>{{ext_q1}}</li>
+            <li>{{ext_q2}}</li>
+            <li>{{ext_q3}}</li>
+        </ol>
+    </section>
+
+    <!-- ANSWER KEY -->
+    <section class="page-break" id="answer-key">
+        <h2>Answer Key</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Answer</th>
+                <th>Working / Notes</th>
+            </tr>
+            </thead>
+            <tbody data-field="answer_key">
+            <tr>
+                <td>1</td>
+                <td>{{a1}}</td>
+                <td>{{a1_working}}</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>{{a2}}</td>
+                <td>{{a2_working}}</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>{{a3}}</td>
+                <td>{{a3_working}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Visible footer (fallback) -->
+    <div class="visible-footer">
+        <span class="small">Prepared by {{teacher_name}} • {{school}} • {{term_label}}</span>
+        <span class="small right" style="float:right;">Page <span class="pageNumber"></span></span>
+    </div>
+</div>
+
+<!-- Optional page number script (Chromium/Puppeteer will auto-inject; this is a safe fallback) -->
+<script>
+    (function () {
+        var pn = document.querySelectorAll('.pageNumber');
+        for (var i = 0; i < pn.length; i++) pn[i].textContent = (i === 0) ? '' : '';
+        /* leave blank; most renderers replace counters. */
+    })();
+</script>
+</body>
+</html>

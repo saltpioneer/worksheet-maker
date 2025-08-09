@@ -1,0 +1,41 @@
+# Node modules and lock files
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+
+# Next.js build output
+.next/
+out/
+
+# Local environment files
+.env*
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE and editor folders/files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Coverage directory
+coverage/
+
+# ESLint cache
+.eslintcache
+
+# Misc
+*.swp
+
+# PNPM store
+.pnpm-store/
+node_modules/
