@@ -6,7 +6,7 @@ export function ApiKeyWarning() {
       <div className="grid w-full max-w-xl items-start gap-4">
     <Alert className="border-blue-200 bg-blue-50">
       <AlertTriangle className="h-4 w-4 text-blue-600" />
-      <AlertTitle className="text-blue-800">Setup Required if running locally</AlertTitle>
+      <AlertTitle className="text-blue-800">GCP Setup Required if running locally</AlertTitle>
       <AlertDescription className="text-blue-800">
         This application requires a Google AI Studio API key to generate worksheets.{' '}
         <span className="whitespace-nowrap">
