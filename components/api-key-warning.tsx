@@ -3,7 +3,7 @@ import {AlertTriangle} from 'lucide-react'
 
 export function ApiKeyWarning() {
   return (
-      <div className="grid w-full max-w-xl items-start gap-4">
+      <div className="grid w-full max-w-2xl mx-auto px-2 sm:px-4 mb-8 items-start gap-4">
     <Alert className="border-blue-200 bg-blue-50">
       <AlertTriangle className="h-4 w-4 text-blue-600" />
       <AlertTitle className="text-blue-800">GCP Setup Required if running locally</AlertTitle>
