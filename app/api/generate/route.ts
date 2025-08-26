@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { generateText } from 'ai';
 import { getGoogleAIClient } from '@/lib/ai-config';
 import { z } from 'zod';
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inputSchema = z.object({
   curriculum: z.string().min(1),
@@ -215,14 +212,8 @@ ${inputs.include_teacher_notes ? `---
 
 === End of Worksheet ===`
 
-    const googleAI = getGoogleAIClient()
-
-    const apiKey = process.env.GOOGLE_API_KEY;
-    if (!apiKey) {
-      throw new Error("Missing GOOGLE_API_KEY environment variable");
-    }
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const genAI = getGoogleAIClient()
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
     const result = await model.generateContent([
       systemPrompt,

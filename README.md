@@ -1,7 +1,7 @@
 # ClassPlan – AI Worksheet Generator
 
-A **Next.js API route** that generates differentiated, printable student worksheets using **Google’s Gemini API** (Generative Language API).  
-It takes structured lesson inputs (curriculum, subject, objectives, etc.) and produces a complete Markdown worksheet that can be exported to PDF.
+A **Next.js app** that generates differentiated, printable student worksheets using **Google’s Gemini API** (Generative Language API).
+It takes structured lesson inputs (curriculum, subject, objectives, etc.) and produces a complete Markdown worksheet that can be exported to PDF via a minimal, consistent template.
 
 ---
 
@@ -18,10 +18,11 @@ It takes structured lesson inputs (curriculum, subject, objectives, etc.) and pr
 
 ---
 
-## 📂 Project Structure (Relevant to API Route)
+## 📂 Project Structure (API Highlights)
 
-route.ts              # Main API endpoint for worksheet generation
-/lib/ai-config.ts     # Helper to initialize AI client (not shown here)
+- `app/api/generate/route.ts` – Generate worksheet Markdown with Gemini
+- `app/api/export-pdf/route.ts` – Render Markdown to a clean PDF via Puppeteer
+- `lib/ai-config.ts` – Helper to initialize the Google AI client
 
 ---
 
@@ -93,13 +94,13 @@ http://localhost:3000
 
 ⸻
 
-6. API Route
+6. API Routes
 
-This project defines a POST endpoint at:
+Generate Worksheet (Markdown)
 
-/api/worksheet
+POST `/api/generate`
 
-Example Request
+Request body
 
 {
   "curriculum": "Common Core",
@@ -125,9 +126,9 @@ Example Request
 
 ⸻
 
-7. Response
+Response
 
-Returns JSON containing a markdown field with the generated worksheet:
+Returns JSON containing a `markdown` field with the generated worksheet:
 
 {
   "markdown": "# Mathematics — Fractions (Grade 5)\n\n**Aligned to:** Common Core\n..."
@@ -135,19 +136,40 @@ Returns JSON containing a markdown field with the generated worksheet:
 
 You can then render this Markdown as HTML or export it to PDF.
 
+Export PDF (from Markdown)
+
+POST `/api/export-pdf`
+
+Request body
+
+{
+  "markdown": "# ... the worksheet markdown ...",
+  "pageSize": "A4" | "Letter",
+  "filename": "optional-filename"
+}
+
+Response
+
+Content-Type: `application/pdf` with attachment disposition.
+
+Notes
+- The PDF export uses a minimal, printer-friendly HTML template and consistent typography.
+- Page size is applied via Puppeteer’s `format` (CSS `@page size` is not used).
+
 ⸻
 
 ⚙️ Rate Limiting
-	•	The endpoint includes a simple in-memory rate limiter:
-	•	Max: 10 requests per IP per minute
-	•	For production, replace with Redis or another persistent store.
+- The generate endpoint includes a simple in-memory rate limiter:
+- Max: 10 requests per IP per minute
+- For production, replace with Redis or another persistent store.
 
 ⸻
 
 🛠 Development Notes
-	•	Validation is handled with Zod to ensure structured input
-	•	The AI prompt is carefully crafted for consistent, printer-friendly output
-	•	API errors are handled gracefully (invalid inputs, quota limits, blocked content, etc.)
+- Validation is handled with Zod to ensure structured input
+- AI client usage is unified via `lib/ai-config.ts`
+- The generation prompt is crafted for consistent, printer-friendly Markdown output
+- API errors are handled gracefully (invalid inputs, quota limits, blocked content, etc.)
 
 ⸻
 
