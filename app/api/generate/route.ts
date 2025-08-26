@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-export const runtime = 'nodejs'
-export const maxDuration = 60
-import { getGoogleAIClient } from '@/lib/ai-config';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+export const runtime = "nodejs";
+export const maxDuration = 60;
+import { getGoogleAIClient } from "@/lib/ai-config";
+import { z } from "zod";
 
 const inputSchema = z.object({
   curriculum: z.string().min(1),
@@ -21,86 +21,86 @@ const inputSchema = z.object({
   materials: z.string(),
   include_teacher_notes: z.boolean(),
   include_rubric: z.boolean(),
-  page_size: z.enum(['A4', 'Letter']),
-  max_pages: z.number().min(1).max(10)
-})
+  page_size: z.enum(["A4", "Letter"]),
+  max_pages: z.number().min(1).max(10),
+});
 
 // Simple rate limiting (in production, use Redis or similar)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const windowMs = 60 * 1000 // 1 minute
-  const maxRequests = 10 // Increased for Google AI
+  const now = Date.now();
+  const windowMs = 60 * 1000; // 1 minute
+  const maxRequests = 10; // Increased for Google AI
 
-  const record = rateLimitMap.get(ip)
-  
+  const record = rateLimitMap.get(ip);
+
   if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs })
-    return true
+    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+    return true;
   }
-  
+
   if (record.count >= maxRequests) {
-    return false
+    return false;
   }
-  
-  record.count++
-  return true
+
+  record.count++;
+  return true;
 }
 
 function getClientIp(req: NextRequest): string {
   // Prefer standard proxy headers first
-  const xff = req.headers.get('x-forwarded-for');
+  const xff = req.headers.get("x-forwarded-for");
   if (xff) {
-    const ip = xff.split(',')[0].trim();
-    if (ip) return ip.replace(/^::ffff:/, '');
+    const ip = xff.split(",")[0].trim();
+    if (ip) return ip.replace(/^::ffff:/, "");
   }
 
   // Common vendor headers
   const candidates = [
-    'x-real-ip',
-    'cf-connecting-ip',
-    'fastly-client-ip',
-    'true-client-ip',
-    'x-client-ip',
-    'x-cluster-client-ip',
-    'forwarded'
+    "x-real-ip",
+    "cf-connecting-ip",
+    "fastly-client-ip",
+    "true-client-ip",
+    "x-client-ip",
+    "x-cluster-client-ip",
+    "forwarded",
   ];
 
   for (const h of candidates) {
     const val = req.headers.get(h);
     if (!val) continue;
-    if (h === 'forwarded') {
+    if (h === "forwarded") {
       // RFC 7239: Forwarded: for=1.2.3.4;proto=https;host=...
       const m = val.match(/for=(?:"?\[?)([^\s\];",]+)(?:"?\]?)/i);
-      if (m && m[1]) return m[1].replace(/^::ffff:/, '');
+      if (m && m[1]) return m[1].replace(/^::ffff:/, "");
     } else {
-      return val.replace(/^::ffff:/, '');
+      return val.replace(/^::ffff:/, "");
     }
   }
 
   // Fallback to NextRequest.ip if available (edge/runtime dependent)
   // @ts-ignore - `.ip` may exist depending on the deployment target
   const directIp = (req as any).ip as string | undefined;
-  if (directIp) return directIp.replace(/^::ffff:/, '');
+  if (directIp) return directIp.replace(/^::ffff:/, "");
 
   // Normalize localhost IPv6 to IPv4 for consistency
-  return 'unknown';
+  return "unknown";
 }
 
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const ip = getClientIp(request)
+    const ip = getClientIp(request);
     if (!checkRateLimit(ip)) {
       return NextResponse.json(
-        { message: 'Rate limit exceeded. Please try again in a minute.' },
-        { status: 429 }
-      )
+        { message: "Rate limit exceeded. Please try again in a minute." },
+        { status: 429 },
+      );
     }
 
-    const body = await request.json()
-    const inputs = inputSchema.parse(body)
+    const body = await request.json();
+    const inputs = inputSchema.parse(body);
 
     // Create system prompt with template substitution
     const systemPrompt = `You are "Worksheet Maker v0": a teacher-first generator of PRINTABLE worksheets.
@@ -111,7 +111,6 @@ RULES
 - Output ONLY the worksheet content in Markdown. No chit-chat.
 - Use ${inputs.page_size} with 1" margins. No images or links.
 - Keep headings, numbering, and spacing consistent. Avoid overly long lines.
-- Add a top header with: **School:** ______   **Class:** ______   **Name:** ______   **Date:** ______
 - Three tiers of differentiation: Support, Core, Extension (unless overridden).
 - Provide an Answer Key for every item.
 - If diagrams are needed, describe them as text placeholders: [diagram: …].
@@ -122,7 +121,7 @@ INPUT
 - Subject: ${inputs.subject}
 - Year/Grade: ${inputs.grade}
 - Topic: ${inputs.topic}
-- Learning objectives (bullets): ${inputs.objectives.map(obj => `• ${obj}`).join('\n')}
+- Learning objectives (bullets): ${inputs.objectives.map((obj) => `• ${obj}`).join("\n")}
 - Time available: ${inputs.duration}
 - Difficulty per tier: ${inputs.support_level_desc} | ${inputs.core_level_desc} | ${inputs.extension_level_desc}
 - Number of questions per tier: ${inputs.n_support} / ${inputs.n_core} / ${inputs.n_extension}
@@ -138,7 +137,7 @@ OUTPUT FORMAT (exactly this structure)
 **Aligned to:** ${inputs.curriculum}
 
 **Learning objectives:**
-${inputs.objectives.map(obj => `- ${obj}`).join('\n')}
+${inputs.objectives.map((obj) => `- ${obj}`).join("\n")}
 
 **Time:** ${inputs.duration}   **Materials:** ${inputs.materials}
 
@@ -193,7 +192,9 @@ Richer application or reasoning. Multi-step, pattern/generalization, or explain-
   1) …
   2) …
 
-${inputs.include_rubric ? `---
+${
+  inputs.include_rubric
+    ? `---
 
 ## QUICK RUBRIC (4 levels)
 
@@ -201,31 +202,39 @@ ${inputs.include_rubric ? `---
 |---|---|---|---|---|
 | Accuracy | … | … | … | … |
 | Reasoning/Working | … | … | … | … |
-| Communication | … | … | … | … |` : ''}
+| Communication | … | … | … | … |`
+    : ""
+}
 
-${inputs.include_teacher_notes ? `---
+${
+  inputs.include_teacher_notes
+    ? `---
 
 ## TEACHER NOTES (not for students)
 
 - Misconceptions to watch: …
 - Fast finishes: …
 - Differentiation moves: …
-- Standards mapping: …` : ''}
+- Standards mapping: …`
+    : ""
+}
 
-=== End of Worksheet ===`
+=== End of Worksheet ===`;
 
-    const genAI = getGoogleAIClient()
+    const genAI = getGoogleAIClient();
 
     const result = await genAI.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: "gemini-2.5-flash",
       config: {
         systemInstruction: systemPrompt,
       },
       contents: [
         {
-          role: 'user',
+          role: "user",
           parts: [
-            { text: 'Generate a complete worksheet following the exact format specified in the system prompt.' },
+            {
+              text: "Generate a complete worksheet following the exact format specified in the system prompt.",
+            },
           ],
         },
       ],
@@ -236,50 +245,61 @@ ${inputs.include_teacher_notes ? `---
 
     if (!text) {
       return NextResponse.json(
-        { message: 'The model returned no text. Please try again or adjust inputs.' },
-        { status: 502 }
-      )
+        {
+          message:
+            "The model returned no text. Please try again or adjust inputs.",
+        },
+        { status: 502 },
+      );
     }
 
-    return NextResponse.json({ markdown: text })
-
+    return NextResponse.json({ markdown: text });
   } catch (error) {
-    console.error('Generation error:', error)
-    
+    console.error("Generation error:", error);
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Invalid input data', errors: error.errors },
-        { status: 400 }
-      )
+        { message: "Invalid input data", errors: error.errors },
+        { status: 400 },
+      );
     }
 
     // Handle Google AI specific errors
     if (error instanceof Error) {
-      if (error.message.includes('API key')) {
+      if (error.message.includes("API key")) {
         return NextResponse.json(
-          { message: 'Google AI API key is not configured or invalid. Please check your GOOGLE_API_KEY environment variable.' },
-          { status: 401 }
-        )
+          {
+            message:
+              "Google AI API key is not configured or invalid. Please check your GOOGLE_API_KEY environment variable.",
+          },
+          { status: 401 },
+        );
       }
-      
-      if (error.message.includes('quota') || error.message.includes('limit')) {
+
+      if (error.message.includes("quota") || error.message.includes("limit")) {
         return NextResponse.json(
-          { message: 'API quota exceeded. Please try again later.' },
-          { status: 429 }
-        )
+          { message: "API quota exceeded. Please try again later." },
+          { status: 429 },
+        );
       }
-      
-      if (error.message.includes('safety') || error.message.includes('blocked')) {
+
+      if (
+        error.message.includes("safety") ||
+        error.message.includes("blocked")
+      ) {
         return NextResponse.json(
-          { message: 'Content was blocked by safety filters. Please try different inputs.' },
-          { status: 400 }
-        )
+          {
+            message:
+              "Content was blocked by safety filters. Please try different inputs.",
+          },
+          { status: 400 },
+        );
       }
     }
 
     return NextResponse.json(
-      { message: 'Failed to generate worksheet. Please try again.' },
-      { status: 500 }
-    )
+      { message: "Failed to generate worksheet. Please try again." },
+      { status: 500 },
+    );
   }
 }
