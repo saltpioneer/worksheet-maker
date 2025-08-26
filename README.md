@@ -1,13 +1,13 @@
 # ClassPlan – AI Worksheet Generator
 
-A **Next.js app** that generates differentiated, printable student worksheets using **Google’s Gemini API** (Generative Language API).
+A **Next.js app** that generates differentiated, printable student worksheets using **Google’s Gemini API** via the `@google/genai` SDK.
 It takes structured lesson inputs (curriculum, subject, objectives, etc.) and produces a complete Markdown worksheet that can be exported to PDF via a minimal, consistent template.
 
 ---
 
 ## ✨ Features
 
-- **Powered by Google Gemini** (`gemini-1.5-flash` model via @google/generative-ai)
+- **Powered by Google Gemini** (`gemini-1.5-flash` model via @google/genai)
 - Structured prompt design to ensure consistent worksheet formatting
 - Generates:
   - Support, Core, and Extension activities
@@ -23,6 +23,24 @@ It takes structured lesson inputs (curriculum, subject, objectives, etc.) and pr
 - `app/api/generate/route.ts` – Generate worksheet Markdown with Gemini
 - `app/api/export-pdf/route.ts` – Render Markdown to a clean PDF via Puppeteer
 - `lib/ai-config.ts` – Helper to initialize the Google AI client
+
+### 🔧 AI Client Example
+
+```ts
+import { GoogleGenAI } from '@google/genai';
+
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+
+const result = await ai.models.generateContent({
+  model: 'gemini-1.5-flash',
+  config: { systemInstruction: 'You are Worksheet Maker v0.' },
+  contents: [
+    { role: 'user', parts: [{ text: 'Generate a worksheet.' }] },
+  ],
+});
+
+console.log(result.response.text());
+```
 
 ---
 
@@ -181,6 +199,6 @@ This project is licensed under the MIT License.
 ⸻
 
 📡 References
-	•	Google Generative AI Node.js SDK
-	•	Generative Language API Docs
-	•	Next.js API Routes
+- [Google GenAI Node.js SDK](https://github.com/googleapis/js-genai)
+- [Gemini API Docs](https://ai.google.dev/gemini-api/docs)
+- [Next.js API Routes](https://nextjs.org/docs/app/building-your-application/routing/routes)
