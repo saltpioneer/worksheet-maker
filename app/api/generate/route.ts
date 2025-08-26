@@ -231,8 +231,15 @@ ${inputs.include_teacher_notes ? `---
       ],
     });
 
-    const text = result.response.text();
+    // The @google/genai SDK returns the text directly on the response object
+    const text = result.text;
 
+    if (!text) {
+      return NextResponse.json(
+        { message: 'The model returned no text. Please try again or adjust inputs.' },
+        { status: 502 }
+      )
+    }
 
     return NextResponse.json({ markdown: text })
 
