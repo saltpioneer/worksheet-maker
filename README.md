@@ -15,6 +15,7 @@ It takes structured lesson inputs (curriculum, subject, objectives, etc.) and pr
   - Optional teacher notes and rubrics
 - Soft page limit and clean Markdown output for easy PDF export
 - Simple built-in **rate limiting** (per IP per minute)
+- LaTeX math expressions rendered with **KaTeX** in preview and exported PDFs
 
 ---
 
