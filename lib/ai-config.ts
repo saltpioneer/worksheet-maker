@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 export const getGoogleAIClient = () => {
   const apiKey = process.env.GOOGLE_API_KEY;
@@ -7,5 +7,5 @@ export const getGoogleAIClient = () => {
     throw new Error('Google AI API key is missing. Please set GOOGLE_API_KEY environment variable.');
   }
 
-  return new GoogleGenerativeAI(apiKey);
+  return new GoogleGenAI({ apiKey });
 };
