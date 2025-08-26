@@ -1,31 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server'
-import chromium from '@sparticuz/chromium'
-import puppeteerCore from 'puppeteer-core'
-import fs from 'fs'
-import path from 'path'
-import { marked } from 'marked'
+import { NextRequest, NextResponse } from "next/server";
+import chromium from "@sparticuz/chromium";
+import puppeteerCore from "puppeteer-core";
+import fs from "fs";
+import path from "path";
+import { marked } from "marked";
 
-export const runtime = 'nodejs'
-export const maxDuration = 60
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 interface ExportPDFRequest {
-  markdown?: string
-  pageSize: 'A4' | 'Letter'
-  filename?: string
+  markdown?: string;
+  pageSize: "A4" | "Letter";
+  filename?: string;
   // legacy support
-  templateData?: Record<string, unknown>
-  debug?: boolean
+  templateData?: Record<string, unknown>;
+  debug?: boolean;
 }
 
 function cleanMarkdown(input: string): string {
-  let text = input || ''
+  let text = input || "";
   // Remove common end markers and excessive whitespace
-  text = text.replace(/^===.+?===\s*$/gim, '').trim()
-  return text
+  text = text.replace(/^===.+?===\s*$/gim, "").trim();
+  return text;
 }
 
-function htmlForMarkdown(markdown: string, pageSize: 'A4' | 'Letter') {
-  const body = marked.parse(cleanMarkdown(markdown)) as string
+function htmlForMarkdown(markdown: string, pageSize: "A4" | "Letter") {
+  const body = marked.parse(cleanMarkdown(markdown)) as string;
   // Minimal, consistent CSS. Avoid @page size so puppeteer "format" takes effect.
   return `<!DOCTYPE html>
   <html lang="en">
@@ -59,153 +59,191 @@ function htmlForMarkdown(markdown: string, pageSize: 'A4' | 'Letter') {
   <body>
     <div class="doc">
       <div class="headerline">
-        <span><strong>School:</strong> ______</span>
+        <span><strong>School:</strong> ___________</span>
         <span><strong>Class:</strong> ______</span>
-        <span><strong>Name:</strong> ______</span>
+        <span><strong>Name:</strong> ___________</span>
         <span><strong>Date:</strong> ______</span>
       </div>
       ${body}
     </div>
   </body>
-  </html>`
+  </html>`;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { markdown, pageSize, filename, templateData, debug } = await request.json() as ExportPDFRequest
-    console.log('Export-PDF: received request')
+    const { markdown, pageSize, filename, templateData, debug } =
+      (await request.json()) as ExportPDFRequest;
+    console.log("Export-PDF: received request");
 
     if (!markdown && !templateData) {
-      return NextResponse.json({ message: 'Markdown is required.' }, { status: 400 })
+      return NextResponse.json(
+        { message: "Markdown is required." },
+        { status: 400 },
+      );
     }
 
     // Primary path: render Markdown into a clean HTML template
-    const html = markdown ? htmlForMarkdown(markdown, pageSize) : htmlForMarkdown('# Document\n\nNo markdown provided.', pageSize)
-    if (debug) return NextResponse.json({ html })
+    const html = markdown
+      ? htmlForMarkdown(markdown, pageSize)
+      : htmlForMarkdown("# Document\n\nNo markdown provided.", pageSize);
+    if (debug) return NextResponse.json({ html });
 
     // Launch Chromium and render the template
-    const isServerless = Boolean(process.env.VERCEL || process.env.AWS_REGION)
-    const userExec = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH
+    const isServerless = Boolean(process.env.VERCEL || process.env.AWS_REGION);
+    const userExec =
+      process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH;
 
     function findLocalChromePath(): string | undefined {
-      if (process.platform === 'darwin') {
+      if (process.platform === "darwin") {
         const candidates = [
-          '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-          '/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
-          '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
-          '/Applications/Chromium.app/Contents/MacOS/Chromium',
-          '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
-          '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-        ]
+          "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+          "/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+          "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+          "/Applications/Chromium.app/Contents/MacOS/Chromium",
+          "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        ];
         for (const p of candidates) {
-          try { if (fs.existsSync(p)) return p } catch {}
+          try {
+            if (fs.existsSync(p)) return p;
+          } catch {}
         }
         // Home Applications folder fallback
-        const home = process.env.HOME
+        const home = process.env.HOME;
         if (home) {
           const homeCandidates = [
-            path.join(home, 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
-          ]
-          for (const p of homeCandidates) { try { if (fs.existsSync(p)) return p } catch {} }
+            path.join(
+              home,
+              "Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            ),
+          ];
+          for (const p of homeCandidates) {
+            try {
+              if (fs.existsSync(p)) return p;
+            } catch {}
+          }
 
           // Puppeteer managed Chrome cache (e.g., ~/.cache/puppeteer)
-          const cacheDir = process.env.PUPPETEER_CACHE_DIR || path.join(home, '.cache', 'puppeteer')
-          const chromeCache = path.join(cacheDir, 'chrome')
+          const cacheDir =
+            process.env.PUPPETEER_CACHE_DIR ||
+            path.join(home, ".cache", "puppeteer");
+          const chromeCache = path.join(cacheDir, "chrome");
           try {
             if (fs.existsSync(chromeCache)) {
-              const versions = fs.readdirSync(chromeCache)
+              const versions = fs.readdirSync(chromeCache);
               for (const ver of versions) {
-                const verDir = path.join(chromeCache, ver)
-                const macDirs = ['chrome-mac', 'chrome-mac-arm64']
+                const verDir = path.join(chromeCache, ver);
+                const macDirs = ["chrome-mac", "chrome-mac-arm64"];
                 for (const md of macDirs) {
-                  const candidate = path.join(verDir, md, 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing')
-                  if (fs.existsSync(candidate)) return candidate
+                  const candidate = path.join(
+                    verDir,
+                    md,
+                    "Google Chrome for Testing.app",
+                    "Contents",
+                    "MacOS",
+                    "Google Chrome for Testing",
+                  );
+                  if (fs.existsSync(candidate)) return candidate;
                 }
               }
             }
           } catch {}
         }
       }
-      if (process.platform === 'linux') {
+      if (process.platform === "linux") {
         const candidates = [
-          '/usr/bin/google-chrome',
-          '/usr/bin/google-chrome-stable',
-          '/usr/bin/chromium',
-          '/usr/bin/chromium-browser',
-          '/snap/bin/chromium',
-        ]
-        for (const p of candidates) { try { if (fs.existsSync(p)) return p } catch {} }
+          "/usr/bin/google-chrome",
+          "/usr/bin/google-chrome-stable",
+          "/usr/bin/chromium",
+          "/usr/bin/chromium-browser",
+          "/snap/bin/chromium",
+        ];
+        for (const p of candidates) {
+          try {
+            if (fs.existsSync(p)) return p;
+          } catch {}
+        }
       }
-      if (process.platform === 'win32') {
-        const pf = process.env['PROGRAMFILES']
-        const pfx86 = process.env['PROGRAMFILES(X86)']
-        const local = process.env['LOCALAPPDATA']
+      if (process.platform === "win32") {
+        const pf = process.env["PROGRAMFILES"];
+        const pfx86 = process.env["PROGRAMFILES(X86)"];
+        const local = process.env["LOCALAPPDATA"];
         const candidates = [
-          pf && path.join(pf, 'Google/Chrome/Application/chrome.exe'),
-          pfx86 && path.join(pfx86, 'Google/Chrome/Application/chrome.exe'),
-          local && path.join(local, 'Google/Chrome/Application/chrome.exe'),
-        ].filter(Boolean) as string[]
-        for (const p of candidates) { try { if (fs.existsSync(p)) return p } catch {} }
+          pf && path.join(pf, "Google/Chrome/Application/chrome.exe"),
+          pfx86 && path.join(pfx86, "Google/Chrome/Application/chrome.exe"),
+          local && path.join(local, "Google/Chrome/Application/chrome.exe"),
+        ].filter(Boolean) as string[];
+        for (const p of candidates) {
+          try {
+            if (fs.existsSync(p)) return p;
+          } catch {}
+        }
       }
-      return undefined
+      return undefined;
     }
 
     const launchArgs = [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--no-zygote',
-      '--single-process',
-    ]
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--no-zygote",
+      "--single-process",
+    ];
 
     // Prefer a user-provided executable or serverless Chromium. Fall back to
     // full Puppeteer (local Chrome install) for local development.
-    let execPath = userExec
-    if (!execPath && isServerless) execPath = await chromium.executablePath()
-    if (!execPath) execPath = findLocalChromePath()
+    let execPath = userExec;
+    if (!execPath && isServerless) execPath = await chromium.executablePath();
+    if (!execPath) execPath = findLocalChromePath();
 
     if (!execPath) {
-      const message = 'No Chrome executable found. Set PUPPETEER_EXECUTABLE_PATH or install a local Chrome (e.g., `npx puppeteer browsers install chrome`).'
-      console.error('Export-PDF: ' + message)
-      return NextResponse.json({ message }, { status: 500 })
+      const message =
+        "No Chrome executable found. Set PUPPETEER_EXECUTABLE_PATH or install a local Chrome (e.g., `npx puppeteer browsers install chrome`).";
+      console.error("Export-PDF: " + message);
+      return NextResponse.json({ message }, { status: 500 });
     }
 
     const browser = await puppeteerCore.launch({
       args: [...chromium.args, ...launchArgs],
       executablePath: execPath,
       headless: true,
-    })
-    const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'load', timeout: 30_000 })
-    console.log('Export-PDF: page.setContent done')
-    await page.emulateMediaType('screen')
-    console.log('Export-PDF: page.emulateMediaType done')
-    await page.addStyleTag({ content: 'html { -webkit-print-color-adjust: exact; }' })
-    console.log('Export-PDF: page.addStyleTag done')
-    console.log('Export-PDF: page.waitForTimeout done')
-    console.log('Export-PDF: page.pdf() starting')
+    });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
+    console.log("Export-PDF: page.setContent done");
+    await page.emulateMediaType("screen");
+    console.log("Export-PDF: page.emulateMediaType done");
+    await page.addStyleTag({
+      content: "html { -webkit-print-color-adjust: exact; }",
+    });
+    console.log("Export-PDF: page.addStyleTag done");
+    console.log("Export-PDF: page.waitForTimeout done");
+    console.log("Export-PDF: page.pdf() starting");
     const pdfBuffer = await page.pdf({
-      format: pageSize === 'Letter' ? 'letter' : 'a4',
-      margin: { top: '1in', right: '1in', bottom: '1in', left: '1in' },
+      format: pageSize === "Letter" ? "letter" : "a4",
+      margin: { top: "1in", right: "1in", bottom: "1in", left: "1in" },
       printBackground: true,
       // Let puppeteer format control page size for consistency
       preferCSSPageSize: false,
-    })
-    console.log('Export-PDF: page.pdf() completed, buffer length', pdfBuffer.length)
-    await browser.close()
+    });
+    console.log(
+      "Export-PDF: page.pdf() completed, buffer length",
+      pdfBuffer.length,
+    );
+    await browser.close();
 
     // Return PDF as response
     return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename || 'document'}.pdf"`
-      }
-    })
-
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${filename || "document"}.pdf"`,
+      },
+    });
   } catch (error) {
-    console.error('PDF export error:', error)
-    const errMsg = error instanceof Error ? error.message : 'Unknown error'
-    return NextResponse.json({ message: errMsg }, { status: 500 })
+    console.error("PDF export error:", error);
+    const errMsg = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ message: errMsg }, { status: 500 });
   }
 }
