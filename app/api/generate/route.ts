@@ -215,12 +215,21 @@ ${inputs.include_teacher_notes ? `---
 === End of Worksheet ===`
 
     const genAI = getGoogleAIClient()
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
-    const result = await model.generateContent([
-      systemPrompt,
-      "Generate a complete worksheet following the exact format specified in the system prompt."
-    ]);
+    const result = await genAI.models.generateContent({
+      model: 'gemini-1.5-flash',
+      config: {
+        systemInstruction: systemPrompt,
+      },
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: 'Generate a complete worksheet following the exact format specified in the system prompt.' },
+          ],
+        },
+      ],
+    });
 
     const text = result.response.text();
 
