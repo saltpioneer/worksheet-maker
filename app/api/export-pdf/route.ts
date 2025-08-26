@@ -4,6 +4,48 @@ import puppeteerCore from "puppeteer-core";
 import fs from "fs";
 import path from "path";
 import { marked } from "marked";
+import katex from "katex";
+
+// KaTeX rendering for math expressions
+marked.use({
+  extensions: [
+    {
+      name: "inlineMath",
+      level: "inline",
+      start(src) {
+        return src.indexOf("$");
+      },
+      tokenizer(src) {
+        const match = /^\$([^$\n]+?)\$/.exec(src);
+        if (match) {
+          return { type: "inlineMath", raw: match[0], text: match[1].trim() };
+        }
+      },
+      renderer(token) {
+        return katex.renderToString(token.text, { throwOnError: false });
+      },
+    },
+    {
+      name: "blockMath",
+      level: "block",
+      start(src) {
+        return src.match(/\$\$/)?.index;
+      },
+      tokenizer(src) {
+        const match = /^\$\$([\s\S]+?)\$\$/m.exec(src);
+        if (match) {
+          return { type: "blockMath", raw: match[0], text: match[1].trim() };
+        }
+      },
+      renderer(token) {
+        return katex.renderToString(token.text, {
+          displayMode: true,
+          throwOnError: false,
+        });
+      },
+    },
+  ],
+});
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -33,6 +75,7 @@ function htmlForMarkdown(markdown: string, pageSize: "A4" | "Letter") {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Worksheet</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" />
     <style>
       @page { margin: 1in; }
       * { box-sizing: border-box; }
