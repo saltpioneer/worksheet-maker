@@ -136,6 +136,7 @@ Returns JSON containing a `markdown` field with the generated worksheet:
 
 You can then render this Markdown as HTML or export it to PDF.
 
+
 Export PDF (from Markdown)
 
 POST `/api/export-pdf`

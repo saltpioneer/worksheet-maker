@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import chromium from '@sparticuz/chromium'
 import puppeteerCore from 'puppeteer-core'
+import fs from 'fs'
+import path from 'path'
 import { marked } from 'marked'
 
 export const runtime = 'nodejs'
@@ -83,6 +85,70 @@ export async function POST(request: NextRequest) {
 
     // Launch Chromium and render the template
     const isServerless = Boolean(process.env.VERCEL || process.env.AWS_REGION)
+    const userExec = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH
+
+    function findLocalChromePath(): string | undefined {
+      if (process.platform === 'darwin') {
+        const candidates = [
+          '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+          '/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+          '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
+          '/Applications/Chromium.app/Contents/MacOS/Chromium',
+          '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+          '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+        ]
+        for (const p of candidates) {
+          try { if (fs.existsSync(p)) return p } catch {}
+        }
+        // Home Applications folder fallback
+        const home = process.env.HOME
+        if (home) {
+          const homeCandidates = [
+            path.join(home, 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
+          ]
+          for (const p of homeCandidates) { try { if (fs.existsSync(p)) return p } catch {} }
+
+          // Puppeteer managed Chrome cache (e.g., ~/.cache/puppeteer)
+          const cacheDir = process.env.PUPPETEER_CACHE_DIR || path.join(home, '.cache', 'puppeteer')
+          const chromeCache = path.join(cacheDir, 'chrome')
+          try {
+            if (fs.existsSync(chromeCache)) {
+              const versions = fs.readdirSync(chromeCache)
+              for (const ver of versions) {
+                const verDir = path.join(chromeCache, ver)
+                const macDirs = ['chrome-mac', 'chrome-mac-arm64']
+                for (const md of macDirs) {
+                  const candidate = path.join(verDir, md, 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing')
+                  if (fs.existsSync(candidate)) return candidate
+                }
+              }
+            }
+          } catch {}
+        }
+      }
+      if (process.platform === 'linux') {
+        const candidates = [
+          '/usr/bin/google-chrome',
+          '/usr/bin/google-chrome-stable',
+          '/usr/bin/chromium',
+          '/usr/bin/chromium-browser',
+          '/snap/bin/chromium',
+        ]
+        for (const p of candidates) { try { if (fs.existsSync(p)) return p } catch {} }
+      }
+      if (process.platform === 'win32') {
+        const pf = process.env['PROGRAMFILES']
+        const pfx86 = process.env['PROGRAMFILES(X86)']
+        const local = process.env['LOCALAPPDATA']
+        const candidates = [
+          pf && path.join(pf, 'Google/Chrome/Application/chrome.exe'),
+          pfx86 && path.join(pfx86, 'Google/Chrome/Application/chrome.exe'),
+          local && path.join(local, 'Google/Chrome/Application/chrome.exe'),
+        ].filter(Boolean) as string[]
+        for (const p of candidates) { try { if (fs.existsSync(p)) return p } catch {} }
+      }
+      return undefined
+    }
 
     const launchArgs = [
       '--no-sandbox',
@@ -93,16 +159,23 @@ export async function POST(request: NextRequest) {
       '--single-process',
     ]
 
-    const browser = isServerless
-      ? await puppeteerCore.launch({
-          args: [...chromium.args, ...launchArgs],
-          executablePath: await chromium.executablePath(),
-          headless: true,
-        })
-      : await (await import('puppeteer')).default.launch({
-          headless: true,
-          args: launchArgs,
-        })
+    // Prefer a user-provided executable or serverless Chromium. Fall back to
+    // full Puppeteer (local Chrome install) for local development.
+    let execPath = userExec
+    if (!execPath && isServerless) execPath = await chromium.executablePath()
+    if (!execPath) execPath = findLocalChromePath()
+
+    if (!execPath) {
+      const message = 'No Chrome executable found. Set PUPPETEER_EXECUTABLE_PATH or install a local Chrome (e.g., `npx puppeteer browsers install chrome`).'
+      console.error('Export-PDF: ' + message)
+      return NextResponse.json({ message }, { status: 500 })
+    }
+
+    const browser = await puppeteerCore.launch({
+      args: [...chromium.args, ...launchArgs],
+      executablePath: execPath,
+      headless: true,
+    })
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'load', timeout: 30_000 })
     console.log('Export-PDF: page.setContent done')
