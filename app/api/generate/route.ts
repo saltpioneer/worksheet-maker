@@ -110,6 +110,7 @@ Your job: given a curriculum topic, create differentiated student worksheets + a
 RULES
 - Output ONLY the worksheet content in Markdown. No chit-chat.
 - Use ${inputs.page_size} with 1" margins. No images or links.
+- For any mathematical notation, output valid LaTeX wrapped in $...$ for inline math or $$...$$ for display math so it can render with KaTeX.
 - Keep headings, numbering, and spacing consistent. Avoid overly long lines.
 - Three tiers of differentiation: Support, Core, Extension (unless overridden).
 - Provide an Answer Key for every item.

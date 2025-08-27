@@ -29,6 +29,9 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { ApiKeyWarning } from "@/components/api-key-warning";
 import {
   Tooltip,
@@ -924,7 +927,9 @@ export default function WorksheetMaker() {
                       </div>
 
                       <div className="prose dark:prose-invert max-w-none bg-background p-4 rounded-lg border flex-1 min-h-0 overflow-y-auto">
-                        <ReactMarkdown>{markdown}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {markdown}
+                        </ReactMarkdown>
                       </div>
                     </>
                   )}
